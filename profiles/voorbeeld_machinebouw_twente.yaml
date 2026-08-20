@@ -1,0 +1,35 @@
+# Eén profiel = één klant/klanttype. Dit voorbeeld volgt het profiel uit de bouwbrief
+# (machinebouw, regio Twente) — puur als illustratie van hoe een profiel eruitziet.
+# Voor een nieuwe klant: kopieer dit bestand, pas de waarden aan, klaar.
+
+profiel:
+  naam: "Voorbeeld — Machinebouw, regio Twente"
+
+  sectoren:
+    - "Algemene machinebouw"
+    - "Pharma-machinebouw"
+
+  # LET OP: onderstaande SBI-codes zijn PLACEHOLDERS ter illustratie van het veld,
+  # nog niet geverifieerd tegen de officiële CBS/KvK SBI-lijst. Vervang door de
+  # daadwerkelijk juiste codes voordat dit live gebruikt wordt.
+  sbi_codes:
+    - "2822"
+    - "2829"
+
+  grootte_min: 10
+  grootte_max: 100
+
+  regio:
+    omschrijving: "Twente (~30 min rijden vanaf Enschede)"
+
+  type: "eindklant"  # eindklant | partner
+
+  signalen:
+    - vacature_elektromonteur
+    - geen_eigen_elektrotechnicus
+
+  gewichten:
+    sector: 30
+    grootte: 20
+    regio: 20
+    signaal: 30

@@ -1,0 +1,8 @@
+bedrijfsnaam,plaats,postcode,sector,grootte_indicatie,vacature_elektromonteur,geen_eigen_elektrotechnicus,website,bron
+Twentse Machinefabriek B.V.,Hengelo,7550AB,Algemene machinebouw,38,true,true,twentsemachinefabriek-voorbeeld.nl,bedrijvenopdekaart.nl
+IJssel Verpakkingstechniek,Almelo,7607AA,Pharma-machinebouw,64,false,true,ijsselverpakkingstechniek-voorbeeld.nl,bedrijvenopdekaart.nl
+Noaberbouw Systemen,Borne,7622AB,Algemene machinebouw,22,false,true,noaberbouw-voorbeeld.nl,bedrijvenopdekaart.nl
+Regge Precisiewerk,Rijssen,7461AA,Machinebouw/metaal,15,true,false,reggeprecisie-voorbeeld.nl,bedrijvenopdekaart.nl
+Dinkelveen Apparatenbouw,Denekamp,7591AA,Pharma-machinebouw,51,true,false,dinkelveen-voorbeeld.nl,bedrijvenopdekaart.nl
+Vechtdal Machinebouw,Ommen,7731AA,Algemene machinebouw,29,false,true,vechtdal-voorbeeld.nl,bedrijvenopdekaart.nl
+Groot Industrieel Metaal B.V.,Groningen,9700AA,Bakkerijmachines,480,false,false,grootindustrieel-voorbeeld.nl,bedrijvenopdekaart.nl
