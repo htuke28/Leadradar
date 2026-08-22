@@ -12,6 +12,7 @@ from leadradar.output import schrijf_excel
 from leadradar.profile import Profile
 from leadradar.scoring import score_bedrijf
 from leadradar.sources.csv_source import laad_csv
+from leadradar.sources.demo_source import DemoClient
 from leadradar.sources.google_places_source import GooglePlacesClient
 from leadradar.sources.openkvk_source import OpenKvkClient
 from leadradar.store import STATUSSEN, LeadStore, row_naar_company
@@ -115,6 +116,8 @@ with tab_zoeken:
     google_key = None
     bestand = None
     gebruik_voorbeeld = False
+    demo_openkvk = False
+    demo_google = False
 
     with st.container(border=True):
         if bron_keuze == "Automatisch zoeken (OpenKvK)":
@@ -131,6 +134,11 @@ with tab_zoeken:
                 f"**plaats** {profiel.regio_plaatsen or '(geen plaatsen ingesteld in dit profiel)'} "
                 "— de gefilterde resultaten komen er direct uit en worden bewaard in 'Mijn leads'."
             )
+            if not openkvk_key:
+                demo_openkvk = st.checkbox(
+                    "Nog geen key — bekijk hoe dit werkt met demodata (fictieve bedrijven, "
+                    "wel al gefilterd en gescoord op dit profiel)"
+                )
         elif bron_keuze == "Automatisch zoeken (Google Places)":
             google_key = st.text_input(
                 "Google Places API-key",
@@ -147,6 +155,11 @@ with tab_zoeken:
                 f"{(profiel.regio_plaatsen or ['...'])[0]}, Nederland\") — de gefilterde resultaten "
                 "komen er direct uit en worden bewaard in 'Mijn leads'."
             )
+            if not google_key:
+                demo_google = st.checkbox(
+                    "Nog geen key — bekijk hoe dit werkt met demodata (fictieve bedrijven, "
+                    "wel al gefilterd en gescoord op dit profiel)"
+                )
         else:
             st.caption(
                 "Exporteer een gefilterde lijst vanaf bedrijvenopdekaart.nl (of een vergelijkbare "
@@ -193,15 +206,18 @@ with tab_zoeken:
                 )
 
     st.write("")
-    kan_genereren = bool(openkvk_key) or bool(google_key) or bestand is not None or gebruik_voorbeeld
+    demo_modus = demo_openkvk or demo_google
+    kan_genereren = (
+        bool(openkvk_key) or bool(google_key) or bestand is not None or gebruik_voorbeeld or demo_modus
+    )
     genereer = st.button(
-        "⚡ Zoek leads en voeg toe aan 'Mijn leads'",
+        "🧪 Bekijk demovoorbeeld" if demo_modus else "⚡ Zoek leads en voeg toe aan 'Mijn leads'",
         type="primary",
         disabled=not kan_genereren,
         use_container_width=True,
     )
     if not kan_genereren:
-        st.caption("Vul een API-key in, upload een CSV, of kies voorbeelddata om te starten.")
+        st.caption("Vul een API-key in, upload een CSV, of kies voorbeelddata/demodata om te starten.")
 
     if genereer:
         with st.spinner("Bezig met verwerken..."):
@@ -211,6 +227,10 @@ with tab_zoeken:
             elif google_key:
                 client = GooglePlacesClient(apikey=google_key)
                 bedrijven = client.zoek(profiel)
+            elif demo_openkvk:
+                bedrijven = DemoClient(bron_label="demo (OpenKvK-stijl, geen echte key)").zoek(profiel)
+            elif demo_google:
+                bedrijven = DemoClient(bron_label="demo (Google Places-stijl, geen echte key)").zoek(profiel)
             elif bestand is not None:
                 tijdelijk_pad = Path("/tmp/leadradar_upload.csv")
                 tijdelijk_pad.write_bytes(bestand.getvalue())
@@ -235,12 +255,23 @@ with tab_zoeken:
                 for b in bedrijven:
                     b.concept_bericht = genereer_bericht(b, profiel, sjabloon=outreach_sjabloon)
 
-            store.upsert_bedrijven(bedrijven, profiel_naam=profiel.naam)
+            demo_profiel_naam = f"{profiel.naam} (demo)"
+            store.upsert_bedrijven(
+                bedrijven, profiel_naam=demo_profiel_naam if demo_modus else profiel.naam
+            )
 
-        st.success(
-            f"{len(bedrijven)} bedrijven verwerkt en opgeslagen onder 'Mijn leads' → profiel "
-            f"'{profiel.naam}'. Bekijk, filter en beheer ze in de tab hiernaast."
-        )
+        if demo_modus:
+            st.warning(
+                f"🧪 Dit zijn {len(bedrijven)} **fictieve** demobedrijven, geen echte KvK/Google "
+                "Places-resultaten — puur om te laten zien hoe automatisch zoeken + filteren + "
+                f"scoren werkt. Opgeslagen onder een apart profiel '{demo_profiel_naam}' in 'Mijn "
+                "leads', zodat dit nooit tussen je echte leads terechtkomt."
+            )
+        else:
+            st.success(
+                f"{len(bedrijven)} bedrijven verwerkt en opgeslagen onder 'Mijn leads' → profiel "
+                f"'{profiel.naam}'. Bekijk, filter en beheer ze in de tab hiernaast."
+            )
         scores = [b.score or 0 for b in bedrijven]
         m1, m2, m3 = st.columns(3)
         m1.metric("Bedrijven verwerkt", len(bedrijven))
