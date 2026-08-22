@@ -1,9 +1,10 @@
-# Eén profiel = één klant/klanttype. Dit voorbeeld volgt het profiel uit de bouwbrief
-# (machinebouw, regio Twente) — puur als illustratie van hoe een profiel eruitziet.
-# Voor een nieuwe klant: kopieer dit bestand, pas de waarden aan, klaar.
+# Eén profiel = één klant/klanttype. Dit is het profiel van Salesia Techniek zelf,
+# gebaseerd op de bouwbrief (machinebouw, regio Twente). Deze deployment is dus specifiek
+# voor Salesia — voor een volgende klant: kloon deze hele repo naar een nieuwe repo/app,
+# en pas dán dit profiel aan (of maak een tweede profiel-bestand in díe kloon).
 
 profiel:
-  naam: "Voorbeeld — Machinebouw, regio Twente"
+  naam: "Salesia Techniek — Machinebouw, regio Twente"
 
   sectoren:
     - "Algemene machinebouw"

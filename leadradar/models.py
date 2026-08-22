@@ -30,5 +30,10 @@ class Company:
     score: Optional[float] = None
     match_redenen: List[str] = field(default_factory=list)
 
-    # --- contact (nog geen bron gekoppeld — zie README) ---
+    # --- contact & website-verrijking (fase 2, zie leadradar/enrich/website.py) ---
     contactpersoon: Optional[str] = None
+    contactpersoon_bron: Optional[str] = None  # bijv. "website (ongeverifieerd)"
+    website_status: str = "niet opgezocht"  # "verwerkt" | "geen website bekend" | "website niet bereikbaar" | "niet opgezocht"
+
+    # --- outreach (fase 2, zie leadradar/outreach.py) ---
+    concept_bericht: Optional[str] = None

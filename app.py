@@ -5,6 +5,8 @@ from pathlib import Path
 import streamlit as st
 
 from leadradar.enrich.kvk import KvkClient
+from leadradar.enrich.website import WebsiteEnricher
+from leadradar.outreach import STANDAARD_SJABLOON, genereer_bericht
 from leadradar.output import schrijf_excel
 from leadradar.profile import Profile
 from leadradar.scoring import score_bedrijf
@@ -51,7 +53,34 @@ with st.sidebar:
     if kvk_aan:
         kvk_key = st.text_input("KvK API-key", type="password")
 
-st.header("3. Bedrijvenlijst")
+    st.header("3. Contactpersoon + signalen (optioneel)")
+    website_aan = st.checkbox(
+        "Zoek per bedrijf op de eigen website naar een vacature-elektromonteur-signaal en een "
+        "contactpersoon",
+        value=False,
+        help="Bezoekt alleen de eigen, publieke website van het bedrijf zelf (geen LinkedIn of "
+        "andere platforms). Werkt alleen als er al een website-URL bekend is — Google Places "
+        "vult die altijd, OpenKvK niet gegarandeerd. Dit is een heuristiek: behandel elk gevonden "
+        "resultaat als 'te verifiëren', niet als vaststaand feit. 'Geen eigen elektrotechnicus' "
+        "wordt hier niet gedetecteerd — dat blijft iets om zelf te bevestigen op de shortlist.",
+    )
+
+    st.header("4. Concept eerste bericht (optioneel)")
+    outreach_aan = st.checkbox(
+        "Genereer per bedrijf een concept eerste bericht",
+        value=False,
+        help="Nog geen 'Gilberts stijl' — een neutraal sjabloon om op te stellen. Altijd checken "
+        "en aanpassen voor je het verstuurt.",
+    )
+    outreach_sjabloon = STANDAARD_SJABLOON
+    if outreach_aan:
+        outreach_sjabloon = st.text_area(
+            "Sjabloon (placeholders: {aanhef}, {bedrijfsnaam}, {sector}, {signaal_zin})",
+            value=STANDAARD_SJABLOON,
+            height=220,
+        )
+
+st.header("5. Bedrijvenlijst")
 bron_keuze = st.radio(
     "Hoe wil je bedrijven verzamelen?",
     [
@@ -126,8 +155,16 @@ if genereer:
             client = KvkClient(apikey=kvk_key) if kvk_key else KvkClient()
             bedrijven = [client.verrijk(b) for b in bedrijven]
 
+        if website_aan:
+            website_client = WebsiteEnricher()
+            bedrijven = [website_client.verrijk(b, gewenste_signalen=profiel.signalen) for b in bedrijven]
+
         bedrijven = [score_bedrijf(b, profiel) for b in bedrijven]
         bedrijven.sort(key=lambda b: b.score or 0, reverse=True)
+
+        if outreach_aan:
+            for b in bedrijven:
+                b.concept_bericht = genereer_bericht(b, profiel, sjabloon=outreach_sjabloon)
 
         excel_pad = Path("/tmp/leadradar_output.xlsx")
         schrijf_excel(bedrijven, excel_pad)
@@ -140,11 +177,20 @@ if genereer:
             "Plaats": b.plaats,
             "Score": b.score,
             "Match-reden": "; ".join(b.match_redenen),
+            "Contactpersoon": b.contactpersoon or ("— (niet gevonden)" if website_aan else "— (website-check uit)"),
             "KvK-status": b.kvk_status,
+            "Website-verrijking": b.website_status,
         }
         for b in bedrijven
     ]
     st.dataframe(weergave, use_container_width=True, hide_index=True)
+
+    if outreach_aan:
+        with st.expander("Concept berichten bekijken (eerste 5)", expanded=False):
+            for b in bedrijven[:5]:
+                st.markdown(f"**{b.bedrijfsnaam}**")
+                st.text(b.concept_bericht)
+                st.divider()
 
     st.download_button(
         "⬇ Download Excel",

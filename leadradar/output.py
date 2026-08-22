@@ -16,10 +16,13 @@ KOLOMMEN = [
     ("sector_weergave", "Sector"),
     ("grootte_weergave", "Grootte"),
     ("contactpersoon", "Contactpersoon"),
+    ("contactpersoon_bron_weergave", "Contactpersoon — bron"),
     ("match_redenen_weergave", "Match-reden"),
     ("score", "Score"),
     ("bron", "Bron"),
     ("kvk_status", "KvK-status"),
+    ("website_status", "Website-verrijking"),
+    ("concept_bericht_weergave", "Concept bericht"),
 ]
 
 
@@ -42,7 +45,9 @@ def schrijf_excel(bedrijven: List[Company], pad: Union[str, Path]) -> None:
         b.sector_weergave = _sector_weergave(b)  # type: ignore[attr-defined]
         b.grootte_weergave = _grootte_weergave(b)  # type: ignore[attr-defined]
         b.match_redenen_weergave = "; ".join(b.match_redenen)  # type: ignore[attr-defined]
-        b.contactpersoon = b.contactpersoon or "— (nog geen bron gekoppeld, zie README)"
+        b.contactpersoon_bron_weergave = b.contactpersoon_bron or ""  # type: ignore[attr-defined]
+        b.concept_bericht_weergave = b.concept_bericht or ""  # type: ignore[attr-defined]
+        b.contactpersoon = b.contactpersoon or "— (niet gevonden, zie 'Website-verrijking')"
 
     wb = openpyxl.Workbook()
     ws = wb.active
