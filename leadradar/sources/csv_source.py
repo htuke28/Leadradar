@@ -21,6 +21,7 @@ def laad_csv(pad: Union[str, Path], bron_label: str = "csv-import") -> List[Comp
     Verwachte kolommen (zie data/voorbeeld_export.csv):
     bedrijfsnaam, plaats, postcode, sector, grootte_indicatie,
     vacature_elektromonteur, geen_eigen_elektrotechnicus, website, bron
+    Optioneel, indien al bekend: email, telefoonnummer, contactpersoon.
     """
     bedrijven: List[Company] = []
     with open(pad, newline="", encoding="utf-8") as f:
@@ -30,6 +31,7 @@ def laad_csv(pad: Union[str, Path], bron_label: str = "csv-import") -> List[Comp
             if not naam:
                 continue
             grootte_raw = (rij.get("grootte_indicatie") or "").strip()
+            contactpersoon = (rij.get("contactpersoon") or "").strip() or None
             bedrijven.append(
                 Company(
                     bedrijfsnaam=naam,
@@ -43,6 +45,10 @@ def laad_csv(pad: Union[str, Path], bron_label: str = "csv-import") -> List[Comp
                     },
                     website=(rij.get("website") or "").strip() or None,
                     bron=(rij.get("bron") or "").strip() or bron_label,
+                    contactpersoon=contactpersoon,
+                    contactpersoon_bron="csv-import" if contactpersoon else None,
+                    email=(rij.get("email") or "").strip() or None,
+                    telefoonnummer=(rij.get("telefoonnummer") or "").strip() or None,
                 )
             )
     return bedrijven

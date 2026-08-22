@@ -8,10 +8,11 @@ import requests
 
 from ..models import Company
 
-# Verrijkt een gevonden bedrijf met twee dingen die geen van de andere bronnen levert:
+# Verrijkt een gevonden bedrijf met dingen die geen van de andere bronnen levert:
 # 1. Een concreet signaal ("vacature_elektromonteur") door de eigen vacature-pagina van het
 #    bedrijf te doorzoeken op trefwoorden.
-# 2. Een best-effort contactpersoon-naam, gevonden op de eigen contact/over-ons-pagina.
+# 2. Een best-effort contactpersoon-naam, e-mailadres en telefoonnummer, gevonden op de eigen
+#    contact/over-ons-pagina (mailto:/tel:-links eerst, anders een regex over de platte tekst).
 #
 # Dit is bewust GEEN scraping van een platform van een ander (LinkedIn, Google-resultaten) —
 # alleen de eigen, publieke website van het bedrijf zelf, net als een mens dat handmatig zou
@@ -54,6 +55,35 @@ _NAAM_PATROON = re.compile(
     re.IGNORECASE,
 )
 
+_EMAIL_PATROON = re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+")
+_GEEN_ECHTE_EMAIL_EXTENSIES = (".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".ico")
+
+# Nederlandse telefoonnummers: 0X-XXXXXXXX (vast/mobiel) of +31X-XXXXXXXX, met optionele
+# spaties/streepjes. Bewust eenvoudig gehouden, net als de naam-regex hierboven.
+_TELEFOON_PATROON = re.compile(r"(?:\+31[\s\-]?|0)[1-9](?:[\s\-]?\d){8}")
+
+
+def _vind_email(html: str) -> Optional[str]:
+    mailto = re.search(r'href=["\']mailto:([^"\'?]+)', html, re.IGNORECASE)
+    if mailto:
+        return mailto.group(1).strip()
+    zonder_tags = re.sub(r"<[^>]+>", " ", html)
+    for match in _EMAIL_PATROON.finditer(zonder_tags):
+        kandidaat = match.group(0)
+        if kandidaat.lower().endswith(_GEEN_ECHTE_EMAIL_EXTENSIES):
+            continue  # bijv. "logo@2x.png" in een class-/bestandsnaam, geen echt e-mailadres
+        return kandidaat
+    return None
+
+
+def _vind_telefoonnummer(html: str) -> Optional[str]:
+    tel = re.search(r'href=["\']tel:([^"\']+)', html, re.IGNORECASE)
+    if tel:
+        return tel.group(1).strip()
+    zonder_tags = re.sub(r"<[^>]+>", " ", html)
+    match = _TELEFOON_PATROON.search(zonder_tags)
+    return match.group(0).strip() if match else None
+
 
 class WebsiteEnricher:
     def __init__(self, timeout: float = 8.0, user_agent: str = "Leadradar/0.1 (+lead-verrijking, best-effort)") -> None:
@@ -92,19 +122,32 @@ class WebsiteEnricher:
         )
         return heeft_functie and heeft_vacature_context
 
-    def _vind_contactpersoon(self, homepage_html: str, basis_url: str) -> Optional[str]:
+    def _vind_contactgegevens(
+        self, homepage_html: str, basis_url: str
+    ) -> tuple[Optional[str], Optional[str], Optional[str]]:
+        """Doorzoekt homepage + contact/over-ons-pagina's op naam, e-mail en telefoonnummer.
+        Stopt zodra alle drie gevonden zijn; anders wat er wél gevonden is (kan gedeeltelijk)."""
         teksten = [homepage_html]
         for link in self._vind_links(homepage_html, basis_url, CONTACT_PAD_TREFWOORDEN)[:3]:
             pagina = self._fetch(link)
             if pagina:
                 teksten.append(pagina)
+
+        naam = email = telefoon = None
         for tekst in teksten:
-            zonder_tags = re.sub(r"<[^>]+>", " ", tekst)
-            zonder_tags = re.sub(r"\s+", " ", zonder_tags)
-            match = _NAAM_PATROON.search(zonder_tags)
-            if match:
-                return match.group(1).strip()
-        return None
+            if not naam:
+                zonder_tags = re.sub(r"<[^>]+>", " ", tekst)
+                zonder_tags = re.sub(r"\s+", " ", zonder_tags)
+                match = _NAAM_PATROON.search(zonder_tags)
+                if match:
+                    naam = match.group(1).strip()
+            if not email:
+                email = _vind_email(tekst)
+            if not telefoon:
+                telefoon = _vind_telefoonnummer(tekst)
+            if naam and email and telefoon:
+                break
+        return naam, email, telefoon
 
     def verrijk(self, bedrijf: Company, gewenste_signalen: Optional[List[str]] = None) -> Company:
         """Zacht falen: als er niets bereikbaar of vindbaar is, blijft het bedrijf verder
@@ -124,10 +167,14 @@ class WebsiteEnricher:
             if self._detecteer_vacature_elektromonteur(homepage, bedrijf.website):
                 bedrijf.signalen_bron["vacature_elektromonteur"] = True
 
-        contactpersoon = self._vind_contactpersoon(homepage, bedrijf.website)
-        if contactpersoon:
-            bedrijf.contactpersoon = contactpersoon
+        naam, email, telefoon = self._vind_contactgegevens(homepage, bedrijf.website)
+        if naam:
+            bedrijf.contactpersoon = naam
             bedrijf.contactpersoon_bron = "website (ongeverifieerd)"
+        if email:
+            bedrijf.email = email
+        if telefoon:
+            bedrijf.telefoonnummer = telefoon
 
         bedrijf.website_status = "verwerkt"
         return bedrijf

@@ -165,7 +165,8 @@ with tab_zoeken:
                 "Exporteer een gefilterde lijst vanaf bedrijvenopdekaart.nl (of een vergelijkbare "
                 "bron) naar CSV, met kolommen: `bedrijfsnaam, plaats, postcode, sector, "
                 "grootte_indicatie, vacature_elektromonteur, geen_eigen_elektrotechnicus, "
-                "website, bron`."
+                "website, bron`. Optioneel, als je dat al hebt: `contactpersoon, email, "
+                "telefoonnummer`."
             )
             bestand = st.file_uploader("CSV-bestand", type=["csv"], label_visibility="collapsed")
             if bestand is None:
@@ -325,6 +326,8 @@ with tab_beheren:
                         "Score": r["score"],
                         "Status": r["status"],
                         "Contactpersoon": r["contactpersoon"] or "—",
+                        "E-mail": r["email"] or "—",
+                        "Telefoon": r["telefoonnummer"] or "—",
                         "Match-reden": r["match_redenen"] or "",
                         "Profiel": r["profiel_naam"],
                     }
@@ -336,7 +339,10 @@ with tab_beheren:
                 df,
                 use_container_width=True,
                 hide_index=True,
-                disabled=["id", "Bedrijf", "Plaats", "Score", "Contactpersoon", "Match-reden", "Profiel"],
+                disabled=[
+                    "id", "Bedrijf", "Plaats", "Score", "Contactpersoon", "E-mail", "Telefoon",
+                    "Match-reden", "Profiel",
+                ],
                 column_config={
                     "id": None,
                     "Verwijderen": st.column_config.CheckboxColumn(
