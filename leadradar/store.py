@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS leads (
     match_redenen TEXT,
     contactpersoon TEXT,
     contactpersoon_bron TEXT,
+    email TEXT,
+    telefoonnummer TEXT,
     kvk_status TEXT,
     website_status TEXT,
     concept_bericht TEXT,
@@ -68,10 +70,10 @@ class LeadStore:
                 """
                 INSERT INTO leads (
                     profiel_naam, bedrijfsnaam, plaats, postcode, sector, score,
-                    match_redenen, contactpersoon, contactpersoon_bron, kvk_status,
-                    website_status, concept_bericht, bron
+                    match_redenen, contactpersoon, contactpersoon_bron, email, telefoonnummer,
+                    kvk_status, website_status, concept_bericht, bron
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(profiel_naam, bedrijfsnaam, plaats) DO UPDATE SET
                     postcode=excluded.postcode,
                     sector=excluded.sector,
@@ -79,6 +81,8 @@ class LeadStore:
                     match_redenen=excluded.match_redenen,
                     contactpersoon=excluded.contactpersoon,
                     contactpersoon_bron=excluded.contactpersoon_bron,
+                    email=excluded.email,
+                    telefoonnummer=excluded.telefoonnummer,
                     kvk_status=excluded.kvk_status,
                     website_status=excluded.website_status,
                     concept_bericht=excluded.concept_bericht,
@@ -96,6 +100,8 @@ class LeadStore:
                         "; ".join(b.match_redenen),
                         b.contactpersoon,
                         b.contactpersoon_bron,
+                        b.email,
+                        b.telefoonnummer,
                         b.kvk_status,
                         b.website_status,
                         b.concept_bericht,
@@ -163,6 +169,8 @@ def row_naar_company(row: sqlite3.Row) -> Company:
     bedrijf.match_redenen = [r for r in (row["match_redenen"] or "").split("; ") if r]
     bedrijf.contactpersoon = row["contactpersoon"]
     bedrijf.contactpersoon_bron = row["contactpersoon_bron"]
+    bedrijf.email = row["email"]
+    bedrijf.telefoonnummer = row["telefoonnummer"]
     bedrijf.kvk_status = row["kvk_status"] or "niet opgezocht"
     bedrijf.website_status = row["website_status"] or "niet opgezocht"
     bedrijf.concept_bericht = row["concept_bericht"]

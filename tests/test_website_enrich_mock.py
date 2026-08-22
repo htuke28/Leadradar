@@ -61,6 +61,34 @@ def test_verrijk_vindt_vacature_signaal_en_contactpersoon():
     assert bedrijf.signalen_bron.get("vacature_elektromonteur") is True
     assert bedrijf.contactpersoon == "Jan Bakker"
     assert bedrijf.contactpersoon_bron == "website (ongeverifieerd)"
+    assert bedrijf.telefoonnummer == "074-1234567"
+
+
+def test_verrijk_haalt_email_en_telefoon_uit_mailto_en_tel_links():
+    client = WebsiteEnricher()
+    contact_pagina_met_links = """
+    <html><body>
+    <h2>Contact</h2>
+    <p>Directeur: Anna de Vries</p>
+    <a href="mailto:info@voorbeeldbedrijf.nl">Mail ons</a>
+    <a href="tel:+31612345678">Bel ons</a>
+    </body></html>
+    """
+    responses = {
+        "https://voorbeeldbedrijf.nl": _mock_response("<html><body><a href='/contact'>Contact</a></body></html>"),
+        "https://voorbeeldbedrijf.nl/contact": _mock_response(contact_pagina_met_links),
+    }
+
+    def _fake_get(url, timeout=None):
+        return responses.get(url, _mock_response("", status_code=404))
+
+    with patch.object(client.session, "get", side_effect=_fake_get):
+        bedrijf = Company(bedrijfsnaam="Voorbeeldbedrijf B.V.", plaats="Enschede", website="https://voorbeeldbedrijf.nl")
+        client.verrijk(bedrijf)
+
+    assert bedrijf.email == "info@voorbeeldbedrijf.nl"
+    assert bedrijf.telefoonnummer == "+31612345678"
+    assert bedrijf.contactpersoon == "Anna de Vries"
 
 
 def test_verrijk_zonder_website_slaat_over():

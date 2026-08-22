@@ -59,6 +59,8 @@ class DemoClient:
                     },
                     website=f"https://www.{slug}.nl",
                     bron=self.bron_label,
+                    email=f"info@{slug}.nl",
+                    telefoonnummer=f"053-{(200000 + i * 11111) % 1000000:06d}",
                 )
             )
         return bedrijven

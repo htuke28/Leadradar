@@ -17,6 +17,8 @@ KOLOMMEN = [
     ("grootte_weergave", "Grootte"),
     ("contactpersoon", "Contactpersoon"),
     ("contactpersoon_bron_weergave", "Contactpersoon — bron"),
+    ("email", "E-mail"),
+    ("telefoonnummer", "Telefoonnummer"),
     ("match_redenen_weergave", "Match-reden"),
     ("score", "Score"),
     ("bron", "Bron"),

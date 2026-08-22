@@ -33,6 +33,8 @@ class Company:
     # --- contact & website-verrijking (fase 2, zie leadradar/enrich/website.py) ---
     contactpersoon: Optional[str] = None
     contactpersoon_bron: Optional[str] = None  # bijv. "website (ongeverifieerd)"
+    email: Optional[str] = None
+    telefoonnummer: Optional[str] = None
     website_status: str = "niet opgezocht"  # "verwerkt" | "geen website bekend" | "website niet bereikbaar" | "niet opgezocht"
 
     # --- outreach (fase 2, zie leadradar/outreach.py) ---
