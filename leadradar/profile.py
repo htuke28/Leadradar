@@ -19,6 +19,7 @@ class Profile:
     grootte_min: int
     grootte_max: int
     regio_omschrijving: str
+    regio_plaatsen: List[str]
     type: str
     signalen: List[str]
     gewichten: Dict[str, float] = field(default_factory=lambda: dict(STANDAARD_GEWICHTEN))
@@ -28,13 +29,15 @@ class Profile:
         with open(pad, "r", encoding="utf-8") as f:
             ruw = yaml.safe_load(f)
         p = ruw["profiel"]
+        regio = p.get("regio", {}) or {}
         return cls(
             naam=p["naam"],
             sectoren=list(p.get("sectoren", [])),
             sbi_codes=[str(c) for c in p.get("sbi_codes", [])],
             grootte_min=int(p.get("grootte_min", 0)),
             grootte_max=int(p.get("grootte_max", 10_000)),
-            regio_omschrijving=(p.get("regio", {}) or {}).get("omschrijving", ""),
+            regio_omschrijving=regio.get("omschrijving", ""),
+            regio_plaatsen=list(regio.get("plaatsen", [])),
             type=p.get("type", "eindklant"),
             signalen=list(p.get("signalen", [])),
             gewichten={**STANDAARD_GEWICHTEN, **(p.get("gewichten") or {})},
