@@ -11,6 +11,7 @@ def _profiel() -> Profile:
         grootte_min=10,
         grootte_max=100,
         regio_omschrijving="Twente",
+        regio_plaatsen=["Hengelo", "Almelo"],
         type="eindklant",
         signalen=["vacature_elektromonteur", "geen_eigen_elektrotechnicus"],
         gewichten={"sector": 30, "grootte": 20, "regio": 20, "signaal": 30},
