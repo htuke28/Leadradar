@@ -9,6 +9,7 @@ from leadradar.output import schrijf_excel
 from leadradar.profile import Profile
 from leadradar.scoring import score_bedrijf
 from leadradar.sources.csv_source import laad_csv
+from leadradar.sources.google_places_source import GooglePlacesClient
 from leadradar.sources.openkvk_source import OpenKvkClient
 
 BASISPAD = Path(__file__).parent
@@ -53,13 +54,18 @@ with st.sidebar:
 st.header("3. Bedrijvenlijst")
 bron_keuze = st.radio(
     "Hoe wil je bedrijven verzamelen?",
-    ["Automatisch zoeken (OpenKvK)", "CSV uploaden (handmatige export)"],
-    help="Automatisch zoeken vraagt live bedrijven op bij overheid.io, op basis van de "
-    "sectoren/SBI-codes en plaatsen in je profiel. Geen KvK of andere account nodig voor de "
-    "CSV-optie.",
+    [
+        "Automatisch zoeken (OpenKvK)",
+        "Automatisch zoeken (Google Places)",
+        "CSV uploaden (handmatige export)",
+    ],
+    help="OpenKvK zoekt op officiële SBI-code — sterk voor B2B-industrie. Google Places "
+    "zoekt op vrije tekst zoals een consument dat zou doen — sterker voor lokaal vindbare "
+    "bedrijven (winkels, installateurs, dienstverleners). CSV kost geen account.",
 )
 
 openkvk_key = None
+google_key = None
 bestand = None
 gebruik_voorbeeld = False
 
@@ -75,6 +81,19 @@ if bron_keuze == "Automatisch zoeken (OpenKvK)":
         f"Zoekt op: sectoren/SBI {profiel.sbi_codes or profiel.sectoren} × plaatsen "
         f"{profiel.regio_plaatsen or '(geen plaatsen ingesteld in dit profiel)'}."
     )
+elif bron_keuze == "Automatisch zoeken (Google Places)":
+    google_key = st.text_input(
+        "Google Places API-key",
+        type="password",
+        help="Aan te vragen via console.cloud.google.com/google/maps-apis — facturering moet "
+        "aanstaan, maar er is doorgaans een maandelijks tegoed (controleer het actuele bedrag "
+        "in je Cloud Console). Zoekt op vrije tekst, geen SBI-code nodig.",
+    )
+    st.caption(
+        f"Zoekt op: sectoren {profiel.sectoren} × plaatsen "
+        f"{profiel.regio_plaatsen or '(geen plaatsen ingesteld in dit profiel)'} "
+        f"(bijv. \"{(profiel.sectoren or ['...'])[0]} in {(profiel.regio_plaatsen or ['...'])[0]}, Nederland\")."
+    )
 else:
     st.write(
         "Exporteer een gefilterde lijst vanaf bedrijvenopdekaart.nl (of een vergelijkbare bron) naar CSV, "
@@ -85,13 +104,16 @@ else:
     if bestand is None:
         gebruik_voorbeeld = st.checkbox("Ik heb nog geen export — gebruik voorbeelddata om de tool te proberen")
 
-kan_genereren = bool(openkvk_key) or bestand is not None or gebruik_voorbeeld
+kan_genereren = bool(openkvk_key) or bool(google_key) or bestand is not None or gebruik_voorbeeld
 genereer = st.button("Genereer leadlijst", type="primary", disabled=not kan_genereren)
 
 if genereer:
     with st.spinner("Bezig met verwerken..."):
         if openkvk_key:
             client = OpenKvkClient(apikey=openkvk_key)
+            bedrijven = client.zoek(profiel)
+        elif google_key:
+            client = GooglePlacesClient(apikey=google_key)
             bedrijven = client.zoek(profiel)
         elif bestand is not None:
             tijdelijk_pad = Path("/tmp/leadradar_upload.csv")
